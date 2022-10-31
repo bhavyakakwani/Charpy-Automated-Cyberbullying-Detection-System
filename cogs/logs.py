@@ -3,7 +3,7 @@ from discord.ext import commands
 import mysql.connector
 import os
 import json
-from database import check
+from database import create_database, check, tempcheck
 
 if os.path.exists(os.getcwd() + "/config.json"):
     with open("./config.json") as f:
@@ -38,13 +38,15 @@ class Logs(commands.Cog):
     
     @commands.Cog.listener()
     async def on_ready(self):
+        create_database()
+        await tempcheck(self.client)
         print("Bot is ready!")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         ctx = await self.client.get_context(message)
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             embed = discord.Embed(title = "Message Deleted", color = discord.Color.random()) 
             if message.author.avatar == None:
                     url = message.author.default_avatar_url
@@ -60,7 +62,7 @@ class Logs(commands.Cog):
     async def on_bulk_message_delete(self, messages):
         ctx = await self.client.get_context(messages[0])
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             author = []
             content = []
             for message in messages:
@@ -83,7 +85,7 @@ class Logs(commands.Cog):
     async def on_message_edit(self, before, after):
         ctx = await self.client.get_context(before)
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             embed = discord.Embed(color = discord.Color.random()) 
             if before.author.avatar == None:
                 url = before.author.default_avatar_url
@@ -101,7 +103,7 @@ class Logs(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         result = check(member.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             embed = discord.Embed(title = "Member Joined", color = discord.Color.green()) 
             if member.avatar == None:
                 url = member.default_avatar_url
@@ -115,7 +117,7 @@ class Logs(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         result = check(member.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             embed = discord.Embed(title = "Member Left", color = discord.Color.red()) 
             if member.avatar == None:
                 url = member.default_avatar_url

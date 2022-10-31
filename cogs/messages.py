@@ -4,7 +4,7 @@ from ml import predict
 import mysql.connector
 import os
 import json
-from database import check
+from database import check, tempcheck
 
 if os.path.exists(os.getcwd() + "/config.json"):
     with open("./config.json") as f:
@@ -89,6 +89,8 @@ class Messages(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        await tempcheck(self.client)
+
         if message.author.bot:
             return
 
@@ -114,7 +116,7 @@ class Messages(commands.Cog):
 
             ctx = await self.client.get_context(message)
             result = check(ctx.guild)
-            if result[0][2] == 1:
+            if result and result[0][2] == 1:
                 channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
                 await channel.send(embed = embed)
 

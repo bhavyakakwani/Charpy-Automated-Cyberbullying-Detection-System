@@ -1,8 +1,23 @@
+from multiprocessing import get_context
 import discord
 from discord.ext import commands
 import asyncio
 from duration_converter import DurationConverter
 from database import check
+import mysql.connector
+import datetime
+import os
+import json
+
+if os.path.exists(os.getcwd() + "/config.json"):
+    with open("./config.json") as f:
+        configData = json.load(f)
+else:
+    configTemplate = {"Token": "", "Password": ""}
+    with open(os.getcwd() + "/config.json", "w+") as f:
+        json.dump(configTemplate, f) 
+
+PASSWORD = configData["Password"]  
 
 class Mute(commands.Cog):
 
@@ -42,7 +57,7 @@ class Mute(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 
@@ -67,7 +82,7 @@ class Mute(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 
@@ -109,14 +124,48 @@ class Mute(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 
         await member.send(f"You are now muted in the server: {guild.name} \nReason: {reason}")
         await member.add_roles(mutedRole, reason = reason)
+
+        db = mysql.connector.connect(
+            host = "localhost",
+            user = "root",
+            password = PASSWORD,
+            database = "charpy"
+        )
+        cursor = db.cursor()
+        start_time = datetime.datetime.now()
+        start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("insert into tempmute values (%s, %s, %s, %s)", (member.id, ctx.guild.id, start_time, amount * multiplier[unit]))
+        db.commit()
+        db.close()
+
         await asyncio.sleep(amount * multiplier[unit])
+
+        db = mysql.connector.connect(
+            host = "localhost",
+            user = "root",
+            password = PASSWORD,
+            database = "charpy"
+        )
+        cursor = db.cursor()
+        cursor.execute("delete from tempmute where user_id = %s and server_id = %s", (member.id, ctx.guild.id))
+        db.commit()
+        db.close()
+
         await member.remove_roles(mutedRole)
+        embed = discord.Embed(title = "Member Unmuted", color = discord.Color.green())
+        embed.set_thumbnail(url = url)
+        embed.add_field(name = "Member", value = member.mention, inline = False)
+        embed.add_field(name = "Moderator", value = "<@931933313847939072>", inline = False)
+        await ctx.send(embed = embed)
+        if result and result[0][2] == 1:
+            channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
+            await channel.send(embed = embed)
 
 def setup(client):
     client.add_cog(Mute(client))

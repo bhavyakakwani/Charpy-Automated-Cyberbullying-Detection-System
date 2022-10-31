@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import os
 import json
-from database import create_database
 
 intents = discord.Intents.default()
 intents.members = True
@@ -22,6 +21,5 @@ else:
         json.dump(configTemplate, f) 
 
 TOKEN = configData["Token"]
-create_database()
 
 client.run(TOKEN)   

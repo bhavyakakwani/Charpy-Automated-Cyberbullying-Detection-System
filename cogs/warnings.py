@@ -90,7 +90,7 @@ class Warnings(commands.Cog):
         await ctx.send(embed = embed)
         
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 
@@ -168,7 +168,7 @@ class Warnings(commands.Cog):
             await ctx.send(embed = embed)
 
             result = check(ctx.guild)
-            if result[0][2] == 1:
+            if result and result[0][2] == 1:
                 channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
                 await channel.send(embed = embed)
 

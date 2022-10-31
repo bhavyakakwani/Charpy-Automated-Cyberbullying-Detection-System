@@ -7,16 +7,16 @@ class Kick(commands.Cog):
     def __init__(self, client):
         self.client = client
     
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send(f"Sorry {ctx.message.author.mention}! You can't use that.")
-        elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"{ctx.message.author.mention} please pass in all the required arguments. Use ``.help <name of command>`` for more info.")
-        elif isinstance(error, commands.CommandNotFound):
-            await ctx.send(f"{ctx.message.author.mention} please enter a valid command. Use ``.help`` to see all the valid commands.")
-        elif isinstance(error, commands.MemberNotFound):
-            await ctx.send(f"{ctx.message.author.mention} please enter a valid member.")
+    #@commands.Cog.listener()
+    #async def on_command_error(self, ctx, error):
+    #    if isinstance(error, commands.MissingPermissions):
+    #        await ctx.send(f"Sorry {ctx.message.author.mention}! You can't use that.")
+    #    elif isinstance(error, commands.MissingRequiredArgument):
+    #        await ctx.send(f"{ctx.message.author.mention} please pass in all the required arguments. Use ``.help <name of command>`` for more info.")
+    #    elif isinstance(error, commands.CommandNotFound):
+    #        await ctx.send(f"{ctx.message.author.mention} please enter a valid command. Use ``.help`` to see all the valid commands.")
+    #    elif isinstance(error, commands.MemberNotFound):
+    #        await ctx.send(f"{ctx.message.author.mention} please enter a valid member.")
 
     @commands.command(help = "Kick a member from the server.", aliases = ["k"])
     @commands.has_permissions(kick_members = True)
@@ -42,7 +42,7 @@ class Kick(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 

@@ -3,6 +3,20 @@ from discord.ext import commands
 import asyncio
 from duration_converter import DurationConverter
 from database import check
+import mysql.connector
+import datetime
+import os
+import json
+
+if os.path.exists(os.getcwd() + "/config.json"):
+    with open("./config.json") as f:
+        configData = json.load(f)
+else:
+    configTemplate = {"Token": "", "Password": ""}
+    with open(os.getcwd() + "/config.json", "w+") as f:
+        json.dump(configTemplate, f) 
+
+PASSWORD = configData["Password"]  
 
 class Ban(commands.Cog):
 
@@ -35,7 +49,7 @@ class Ban(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
     
@@ -60,7 +74,7 @@ class Ban(commands.Cog):
                 await ctx.send(embed = embed)
 
                 result = check(ctx.guild)
-                if result[0][2] == 1:
+                if result and result[0][2] == 1:
                     channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
                     await channel.send(embed = embed)
 
@@ -75,6 +89,19 @@ class Ban(commands.Cog):
         multiplier = {"s": 1, "m": 60, "h": 3600, "d": 86400}
         amount, unit = duration
         await ctx.guild.ban(member, reason = reason)
+        
+        db = mysql.connector.connect(
+            host = "localhost",
+            user = "root",
+            password = PASSWORD,
+            database = "charpy"
+        )
+        cursor = db.cursor()
+        start_time = datetime.datetime.now()
+        start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("insert into tempban values (%s, %s, %s, %s)", (member.id, ctx.guild.id, start_time, amount * multiplier[unit]))
+        db.commit()
+        db.close()
         
         embed = discord.Embed(title = "Member Banned", color = discord.Color.dark_red())
 
@@ -91,12 +118,32 @@ class Ban(commands.Cog):
         await ctx.send(embed = embed)
 
         result = check(ctx.guild)
-        if result[0][2] == 1:
+        if result and result[0][2] == 1:
             channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
             await channel.send(embed = embed)
 
         await asyncio.sleep(amount * multiplier[unit])
+
+        db = mysql.connector.connect(
+            host = "localhost",
+            user = "root",
+            password = PASSWORD,
+            database = "charpy"
+        )
+        cursor = db.cursor()
+        cursor.execute("delete from tempban where user_id = %s and server_id = %s", (member.id, ctx.guild.id))
+        db.commit()
+        db.close()
+
         await ctx.guild.unban(member)
+        embed = discord.Embed(title = "Member Unbanned", color = discord.Color.green())
+        embed.set_thumbnail(url = url)
+        embed.add_field(name = "Member", value = member.mention, inline = False)
+        embed.add_field(name = "Moderator", value = "<@931933313847939072>", inline = False)
+        await ctx.send(embed = embed)
+        if result and result[0][2] == 1:
+            channel = discord.utils.get(self.client.get_all_channels(), id = result[0][1])
+            await channel.send(embed = embed)
 
 def setup(client):
     client.add_cog(Ban(client))
